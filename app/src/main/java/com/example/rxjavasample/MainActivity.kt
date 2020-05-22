@@ -1,12 +1,15 @@
 package com.example.rxjavasample
 
 import android.os.Bundle
+import android.os.SystemClock
 import com.google.android.material.snackbar.Snackbar
 import androidx.appcompat.app.AppCompatActivity
 import android.view.Menu
 import android.view.MenuItem
 import androidx.activity.viewModels
 import com.example.rxjavasample.viewmodels.StateViewModel
+import io.reactivex.rxjava3.observers.DisposableObserver
+import io.reactivex.rxjava3.schedulers.Schedulers
 
 import kotlinx.android.synthetic.main.activity_main.*
 
@@ -17,13 +20,34 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         setSupportActionBar(toolbar)
-        println(stateViewModel.firstData)
-
+        dataGrab()
 
         fab.setOnClickListener { view ->
             Snackbar.make(view, "Replace with your own action", Snackbar.LENGTH_LONG)
                     .setAction("Action", null).show()
         }
+    }
+
+    private fun dataGrab() {
+        if (!stateViewModel.ST_INITIAL) return
+        if (!stateViewModel.initialIntegrity()) return
+        stateViewModel.initial_INTEGRITY_FAIL = true
+        stateViewModel.prospective()
+            .subscribeOn(Schedulers.newThread())
+            .subscribeWith(object : DisposableObserver<Boolean>() {
+                override fun onComplete() {
+                    println("completed initial?")
+                }
+
+                override fun onNext(t: Boolean?) {
+                    stateViewModel.ST_INITIAL = false
+                    stateViewModel.fetchDataSets("First Attempt")
+                }
+
+                override fun onError(e: Throwable?) {
+                }
+
+            })
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
